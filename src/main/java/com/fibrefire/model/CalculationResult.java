@@ -1,0 +1,22 @@
+package com.fibrefire.model;
+
+import java.time.LocalDate;
+import java.util.List;
+
+public record CalculationResult(
+        LocalDate emergencyFilledDate,
+        LocalDate csnFreeDate,
+        LocalDate mortgageFreeDate,
+        LocalDate fireDate,
+        double fireAmount,
+        List<MonthlyStatus> monthlyData
+) {
+    public record MonthlyStatus(
+            LocalDate date,
+            int age,
+            double stockSavings,
+            double mortgageLeft,
+            double csnLeft,
+            double fireAmount
+    ) {}
+}
