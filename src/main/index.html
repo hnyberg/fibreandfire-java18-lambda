@@ -68,16 +68,20 @@
           "travelCosts": Number(formData.get("travel_costs"))
         },
         "payChoices": {
-          "percentForAmortization": formData.get("percent_for_amortization")
+          "percentForAmortization": Number(formData.get("percent_for_amortization"))
         }
       };
+
+      const formDataAsString = JSON.stringify(formDataAsJson)
+
+      console.log("sending data:", JSON.stringify(formDataAsJson))
 
       const response = await fetch("https://7fm4j5apc8.execute-api.eu-west-1.amazonaws.com/dev/finance", {
         method: "POST",
         headers: {
           "Content-Type": "application/json"
         },
-        body: JSON.stringify(formDataAsJson)
+        body: formDataAsString
       });
 
       if (response.ok) {

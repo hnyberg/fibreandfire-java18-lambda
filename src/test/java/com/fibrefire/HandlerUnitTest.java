@@ -1,9 +1,19 @@
 package com.fibrefire;
 
+import com.amazonaws.services.lambda.runtime.Context;
+import com.amazonaws.services.lambda.runtime.LambdaLogger;
+import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyRequestEvent;
+import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyResponseEvent;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.fasterxml.jackson.module.paramnames.ParameterNamesModule;
 import com.fibrefire.model.CalculationResult;
 import com.fibrefire.model.InputData;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 
 class HandlerUnitTest {
 
@@ -15,7 +25,7 @@ class HandlerUnitTest {
     }
 
     @Test
-    void handleRequest() {
+    void handleRequest() throws JsonProcessingException {
         InputData inputData = new InputData(
                 new InputData.Birth(1986, 3),
                 new InputData.Income(35000),
@@ -25,7 +35,22 @@ class HandlerUnitTest {
                 new InputData.Spending(3000, 1000),
                 new InputData.PayChoices(40)
         );
-        CalculationResult result = handler.handleRequest(inputData, null);
+
+        final ObjectMapper mapper = new ObjectMapper()
+                .registerModule(new ParameterNamesModule())
+                .registerModule(new JavaTimeModule())
+                .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+
+        APIGatewayProxyRequestEvent event = new APIGatewayProxyRequestEvent()
+                .withBody(mapper.writeValueAsString(inputData));
+
+        LambdaLogger logger = Mockito.mock(LambdaLogger.class);
+        Mockito.doNothing().when(logger).log(Mockito.anyString());
+        Context lambdaContext = Mockito.mock(Context.class);
+        Mockito.doReturn(logger).when(lambdaContext).getLogger();
+
+        APIGatewayProxyResponseEvent response = handler.handleRequest(event, lambdaContext);
+        CalculationResult result = mapper.readValue(response.getBody(), CalculationResult.class);
         System.out.println("emergency: " + result.emergencyFilledDate());
         System.out.println("csn: " + result.csnFreeDate());
         System.out.println("mortgage: " + result.mortgageFreeDate());
