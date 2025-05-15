@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>FibreFire Input</title>
+</head>
+
+<body>
+<h1>FibreFire Ekonomisk Input</h1>
+<form id="dataForm">
+    <label>Födelseår: <input type="number" name="birth_year" required value="1986"></label><br>
+    <label>Födelsemånad (1–12): <input type="number" name="birth_month" required min="1" max="12" value="3"></label><br>
+    <label>Nettolön (kr): <input type="number" name="salary" value="37000"></label><br>
+    <label>Bolån (kr): <input type="number" name="mortgage" value="1300000"></label><br>
+    <label>Bolåneränta (%): <input type="number" name="mortgage_rate" step="0.01" value="3.3"></label><br>
+    <label>Avkastning börsen (%): <input type="number" name="stocks_gain" step="0.01" value="5"></label><br>
+    <label>Lån CSN (kr): <input type="number" name="csn_total" value="108000"></label><br>
+    <label>Avbetalning CSN (kr/mån): <input type="number" name="csn_payoff" value="700"></label><br>
+    <label>Mål nödkonto (kr): <input type="number" name="emergency_goal" value="70000"></label><br>
+    <label>Nödkonto nu (kr): <input type="number" name="emergency_now" value="5000"></label><br>
+    <label>Börsvärde nu (kr): <input type="number" name="stock_savings" value="90000"></label><br>
+    <label>Fasta utgifter exkl mat (kr): <input type="number" name="must_haves" value="7700"></label><br>
+    <label>Mat-relaterade utgifter (kr): <input type="number" name="food_costs" value="2500"></label><br>
+    <label>Resor (kr): <input type="number" name="travel_costs" value="1500"></label><br>
+    <label>Procent-andel att lägga på amortering: <input type="number" name="percent_for_amortization" value="50"></label><br>
+
+    <button type="submit">Spara</button>
+</form>
+
+<div id="json-result"
+     style="margin-top: 20px; white-space: pre-wrap; font-family: monospace; background-color: #f4f4f4; padding: 10px; border-radius: 5px">
+</div>
+
+<canvas id="stockChart" width="600" height="300"></canvas>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+
+    document.getElementById("dataForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const formData = new FormData(e.target)
+      const formDataAsJson = {
+        "birth": {
+          "year": Number(formData.get("birth_year")),
+          "month": Number(formData.get("birth_month"))
+        },
+        "income": {
+          "salary": Number(formData.get("salary"))
+        },
+        "assets": {
+          "emergencyNow": Number(formData.get("emergency_now")),
+          "emergencyGoal": Number(formData.get("emergency_goal")),
+          "stockSavings": Number(formData.get("stock_savings")),
+          "stocksGain": Number(formData.get("stocks_gain"))
+        },
+        "loans": {
+          "mortgage": Number(formData.get("mortgage")),
+          "mortgageRate": Number(formData.get("mortgage_rate")),
+          "csnTotal": Number(formData.get("csn_total"))
+        },
+        "fixedCosts": {
+          "mustHaves": Number(formData.get("must_haves")),
+          "csnPayoff": Number(formData.get("csn_payoff"))
+        },
+        "spending": {
+          "foodCosts": Number(formData.get("food_costs")),
+          "travelCosts": Number(formData.get("travel_costs"))
+        },
+        "payChoices": {
+          "percentForAmortization": formData.get("percent_for_amortization")
+        }
+      };
+
+      const response = await fetch("$PLACEHOLDER", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(formDataAsJson)
+      });
+
+      if (response.ok) {
+        const jsonResponse = await response.json();
+        const result = { ...jsonResponse }
+        delete result.monthly_data
+
+        document.getElementById("json-result").innerHTML = `
+          <h3>Resultat</h3>
+          <u1>
+            <li><strong>Nödkonto fyllt:</strong>${formatDate(result.emergencyFilled.date)}, ålder ${result.emergencyFilled.age}</li>
+            <li><strong>CSN avbetalt:</strong>${formatDate(result.csnFree.date)}, ålder ${result.csnFree.age}</li>
+            <li><strong>Bostadslån betalat:</strong>${formatDate(result.mortgageFree.date)}, ålder ${result.mortgageFree.age}</li>
+            <li><strong>FIRE-ålder:</strong>${formatDate(result.fire.date)}, ålder ${result.fire.age}</li>
+            <li><strong>FIRE-mål (kr):</strong>${Math.round(result.fire.amount).toLocaleString('sv-SE')}</li>
+          </u1>
+        `
+
+        const monthlyData = jsonResponse.monthlyData
+        const labels = monthlyData.map(row => row.date)
+        const age = monthlyData.map(row => row.age)
+        const stockSavings = monthlyData.map(row => row.stock_savings)
+        const mortgageLeft = monthlyData.map(row => row.mortgage_left)
+        const csnLeft = monthlyData.map(row => row.csn_left)
+        const fireAmount = monthlyData.map(row => row.fire_amount)
+
+        new Chart(document.getElementById('stockChart'), {
+          type: 'line',
+          data: {
+            labels,
+            datasets: [
+              { label: 'Aktier', data: stockSavings, borderColor: 'green' },
+              { label: 'Bolån', data: mortgageLeft, borderColor: 'yellow' },
+              { label: 'CSN Lån', data: csnLeft, borderColor: 'red' },
+              { label: 'FIRE-mål', data: fireAmount, borderColor: 'orange', borderDash: [5, 5] }
+            ]
+          },
+          options: {
+            scales: {
+              x: {
+                ticks: {
+                  callback: function (value, index) {
+                    if (index % 2 == 0) return this.getLabelForValue(value)
+                    return ``
+                  }
+                }
+              },
+              y: {
+                beginAtZero: true
+              }
+            }
+          }
+        })
+
+      } else {
+        console.error("Något gick fel:", response.status)
+      }
+
+    });
+
+    function formatDate(isoDateStr) {
+      const [year, month] = isoDateStr.split("-")
+      return `${year}-${month}`
+    }
+
+</script>
+</body>
+
+</html>

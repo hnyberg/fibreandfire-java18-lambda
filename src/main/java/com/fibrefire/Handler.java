@@ -20,7 +20,7 @@ public class Handler implements RequestHandler<InputData, CalculationResult> {
         double emergencyNow = inputData.assets().emergencyNow();
         int emergencyGoal = inputData.assets().emergencyGoal();
         double stockSavings = inputData.assets().stockSavings();
-        int mortgage = inputData.loans().mortgage();
+        double mortgage = inputData.loans().mortgage();
         int stocksGain = inputData.assets().stocksGain();
         double mortgageRate = inputData.loans().mortgageRate();
         int csnDebt = inputData.loans().csnTotal();
@@ -28,7 +28,6 @@ public class Handler implements RequestHandler<InputData, CalculationResult> {
         int mustHaves = inputData.fixedCosts().mustHaves();
         int foodCosts = inputData.spending().foodCosts();
         int travelCosts = inputData.spending().travelCosts();
-        int mortgageMonthlyPayoff = inputData.payChoices().amortization();
         int percentForAmortization = inputData.payChoices().percentForAmortization();
 
         double monthlyStockGainFactor = Math.pow((1 + (double) stocksGain / 100), (double) 1 / 12);
@@ -84,7 +83,7 @@ public class Handler implements RequestHandler<InputData, CalculationResult> {
                 //  amortera
                 if (mortgageFreeDate == null) {
                     double mortgagePayoff = available * percentForAmortization / 100;
-                    mortgage -= mortgageMonthlyPayoff;
+                    mortgage -= mortgagePayoff;
                     available -= mortgagePayoff;
 
                     if (mortgage <= 0) {
