@@ -14,6 +14,8 @@ public class Handler implements RequestHandler<InputData, CalculationResult> {
     @Override
     public CalculationResult handleRequest(InputData inputData, Context context) {
 
+        System.out.println("event received: " + inputData.toString());
+
         int birthYear = inputData.birth().year();
         int birthMonth = inputData.birth().month();
         int salary = inputData.income().salary();
