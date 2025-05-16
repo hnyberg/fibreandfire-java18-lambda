@@ -23,7 +23,8 @@
     <label>Fasta utgifter exkl mat (kr): <input type="number" name="must_haves" value="7700"></label><br>
     <label>Mat-relaterade utgifter (kr): <input type="number" name="food_costs" value="2500"></label><br>
     <label>Resor (kr): <input type="number" name="travel_costs" value="1500"></label><br>
-    <label>Procent-andel att lägga på amortering: <input type="number" name="percent_for_amortization" value="50"></label><br>
+    <label>Procent-andel att lägga på amortering: <input type="number" name="percent_for_amortization"
+                                                         value="50"></label><br>
 
     <button type="submit">Spara</button>
 </form>
@@ -76,7 +77,11 @@
 
       console.log("sending data:", JSON.stringify(formDataAsJson))
 
-      const response = await fetch("https://7fm4j5apc8.execute-api.eu-west-1.amazonaws.com/dev/finance", {
+      const baseUrl = location.hostname === 'localhost'
+      ? 'http://localhost:8080/dev/finance'
+      : 'https://7fm4j5apc8.execute-api.eu-west-1.amazonaws.com/dev/finance';
+
+      const response = await fetch(baseUrl, {
         method: "POST",
         headers: {
           "Content-Type": "application/json"
@@ -92,11 +97,11 @@
         document.getElementById("json-result").innerHTML = `
           <h3>Resultat</h3>
           <u1>
-            <li><strong>Nödkonto fyllt:</strong>${formatDate(result.emergencyFilled.date)}, ålder ${result.emergencyFilled.age}</li>
-            <li><strong>CSN avbetalt:</strong>${formatDate(result.csnFree.date)}, ålder ${result.csnFree.age}</li>
-            <li><strong>Bostadslån betalat:</strong>${formatDate(result.mortgageFree.date)}, ålder ${result.mortgageFree.age}</li>
-            <li><strong>FIRE-ålder:</strong>${formatDate(result.fire.date)}, ålder ${result.fire.age}</li>
-            <li><strong>FIRE-mål (kr):</strong>${Math.round(result.fire.amount).toLocaleString('sv-SE')}</li>
+            <li><strong>Nödkonto fyllt:</strong>${formatDate(result.emergencyFilledDate)}</li>
+            <li><strong>CSN avbetalt:</strong>${formatDate(result.csnFreeDate)}</li>
+            <li><strong>Bostadslån betalat:</strong>${formatDate(result.mortgageFreeDate)}</li>
+            <li><strong>FIRE-ålder:</strong>${formatDate(result.fireDate)}</li>
+            <li><strong>FIRE-mål (kr):</strong>${Math.round(result.fireAmount).toLocaleString('sv-SE')}</li>
           </u1>
         `
 
@@ -142,9 +147,9 @@
 
     });
 
-    function formatDate(isoDateStr) {
-      const [year, month] = isoDateStr.split("-")
-      return `${year}-${month}`
+    function formatDate(date) {
+        const [year, month, day] = date.split("-")
+        return `${year}-${month}`
     }
 
 </script>

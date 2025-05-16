@@ -1,4 +1,4 @@
-package com.fibrefire;
+package com.fibrefire.lambda;
 
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
