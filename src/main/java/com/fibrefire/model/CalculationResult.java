@@ -14,7 +14,9 @@ public record CalculationResult(
     public record MonthlyStatus(
             LocalDate date,
             int age,
+            double saved,
             double stockSavings,
+            double payedOff,
             double mortgageLeft,
             double csnLeft,
             double fireAmount

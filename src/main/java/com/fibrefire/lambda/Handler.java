@@ -13,9 +13,6 @@ import com.fibrefire.logic.HandlerFunctions;
 import com.fibrefire.model.CalculationResult;
 import com.fibrefire.model.InputData;
 
-import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
 
 public class Handler implements RequestHandler<APIGatewayProxyRequestEvent, APIGatewayProxyResponseEvent> {

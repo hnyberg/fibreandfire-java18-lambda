@@ -74,13 +74,15 @@ public class HandlerFunctions {
                 }
             }
 
+            double saved = 0;
+            double payedOff = 0;
             if (available > 0) {
 
                 //  amortera
                 if (mortgageFreeDate == null) {
-                    double mortgagePayoff = available * percentForAmortization / 100;
-                    mortgage -= mortgagePayoff;
-                    available -= mortgagePayoff;
+                    payedOff = available * percentForAmortization / 100;
+                    mortgage -= payedOff;
+                    available -= payedOff;
 
                     if (mortgage <= 0) {
                         mortgageFreeDate = currentDate;
@@ -88,12 +90,13 @@ public class HandlerFunctions {
                 }
 
                 //  börsen
-                stockSavings += Math.max(0, available);
+                saved = Math.max(0, available);
+                stockSavings += saved;
             }
 
             int age = calculateAge(birthYear, birthMonth, currentDate);
             monthlyData.add(new CalculationResult.MonthlyStatus(
-                    currentDate, age, stockSavings, mortgage, csnDebt, fireAmount));
+                    currentDate, age, saved, stockSavings, payedOff, mortgage, csnDebt, fireAmount));
 
             currentDate = currentDate.plusMonths(1);
             monthCounter++;
