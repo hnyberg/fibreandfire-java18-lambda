@@ -25,6 +25,7 @@ public class HandlerFunctions {
         int foodCosts = inputData.spending().foodCosts();
         int travelCosts = inputData.spending().travelCosts();
         int percentForAmortization = inputData.payChoices().percentForAmortization();
+        double firePercentage = inputData.payChoices().firePercentage();
 
         double monthlyStockGainFactor = Math.pow((1 + (double) stocksGain / 100), (double) 1 / 12);
 
@@ -32,6 +33,7 @@ public class HandlerFunctions {
         LocalDate csnFreeDate = null;
         LocalDate mortgageFreeDate = null;
         LocalDate fireDate = null;
+        int fireAge = 0;
         double fireAmount = 0;
         List<CalculationResult.MonthlyStatus> monthlyData = new ArrayList<>();
         LocalDate currentDate = LocalDate.now().withDayOfMonth(1);
@@ -43,16 +45,19 @@ public class HandlerFunctions {
                 || fireDate == null)
                 && monthCounter < 600) {
 
+            int age = calculateAge(birthYear, birthMonth, currentDate);
+
             double mortgageCost = (mortgageRate / 100) * mortgage / 12;
             double monthlyCost = mustHaves + foodCosts + travelCosts + mortgageCost;
 
             double available = salary - monthlyCost;
-            fireAmount = 25 * monthlyCost * 12;
+            fireAmount = (100 / firePercentage) * monthlyCost * 12;
 
             //  Portfolio, Fire
             stockSavings *= monthlyStockGainFactor;
             if (fireDate == null && stockSavings >= fireAmount) {
                 fireDate = currentDate;
+                fireAge = age;
             }
 
             //  CSN
@@ -94,7 +99,6 @@ public class HandlerFunctions {
                 stockSavings += saved;
             }
 
-            int age = calculateAge(birthYear, birthMonth, currentDate);
             monthlyData.add(new CalculationResult.MonthlyStatus(
                     currentDate, age, saved, stockSavings, payedOff, mortgage, csnDebt, fireAmount));
 
@@ -103,7 +107,7 @@ public class HandlerFunctions {
         }
 
         return new CalculationResult(
-                emergencyFilledDate, csnFreeDate, mortgageFreeDate, fireDate, fireAmount, monthlyData);
+                emergencyFilledDate, csnFreeDate, mortgageFreeDate, fireDate, fireAge, fireAmount, monthlyData);
     }
 
     private static int calculateAge(int birthYear, int birthMonth, LocalDate currentDate) {

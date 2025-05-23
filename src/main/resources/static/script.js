@@ -2,40 +2,8 @@ let stockChart = null;
 
 document.getElementById("dataForm").addEventListener("submit", async (e) => {
       e.preventDefault();
-      const formData = new FormData(e.target)
-      const formDataAsJson = {
-        "birth": {
-          "year": Number(formData.get("birth_year")),
-          "month": Number(formData.get("birth_month"))
-        },
-        "income": {
-          "salary": Number(formData.get("salary"))
-        },
-        "assets": {
-          "emergencyNow": Number(formData.get("emergency_now")),
-          "emergencyGoal": Number(formData.get("emergency_goal")),
-          "stockSavings": Number(formData.get("stock_savings")),
-          "stocksGain": Number(formData.get("stocks_gain"))
-        },
-        "loans": {
-          "mortgage": Number(formData.get("mortgage")),
-          "mortgageRate": Number(formData.get("mortgage_rate")),
-          "csnTotal": Number(formData.get("csn_total"))
-        },
-        "fixedCosts": {
-          "mustHaves": Number(formData.get("must_haves")),
-          "csnPayoff": Number(formData.get("csn_payoff"))
-        },
-        "spending": {
-          "foodCosts": Number(formData.get("food_costs")),
-          "travelCosts": Number(formData.get("travel_costs"))
-        },
-        "payChoices": {
-          "percentForAmortization": Number(formData.get("percent_for_amortization"))
-        }
-      };
 
-      const formDataAsString = JSON.stringify(formDataAsJson)
+      const formDataAsString = buildFormData(e);
 
       const isLocal = location.hostname === 'localhost' || location.protocol === 'file:';
       const baseUrl = isLocal
@@ -64,6 +32,45 @@ document.getElementById("dataForm").addEventListener("submit", async (e) => {
 
     });
 
+function buildFormData(event) {
+    const formData = new FormData(event.target)
+      const formDataAsJson = {
+        "birth": {
+          "year": Number(formData.get("birth_year")),
+          "month": Number(formData.get("birth_month"))
+        },
+        "income": {
+          "salary": Number(formData.get("salary"))
+        },
+        "assets": {
+          "emergencyNow": Number(formData.get("emergency_now")),
+          "emergencyGoal": Number(formData.get("emergency_goal")),
+          "stockSavings": Number(formData.get("stock_savings")),
+          "stocksGain": Number(formData.get("stocks_gain"))
+        },
+        "loans": {
+          "mortgage": Number(formData.get("mortgage")),
+          "mortgageRate": Number(formData.get("mortgage_rate")),
+          "csnTotal": Number(formData.get("csn_total"))
+        },
+        "fixedCosts": {
+          "mustHaves": Number(formData.get("must_haves")),
+          "csnPayoff": Number(formData.get("csn_payoff"))
+        },
+        "spending": {
+          "foodCosts": Number(formData.get("food_costs")),
+          "travelCosts": Number(formData.get("travel_costs"))
+        },
+        "payChoices": {
+          "percentForAmortization": Number(formData.get("percent_for_amortization")),
+          "firePercentage": Number(formData.get("fire_percentage"))
+        }
+      };
+
+      const formDataAsString = JSON.stringify(formDataAsJson)
+      return formDataAsString;
+}
+
 function formatDate(date) {
      const [year, month, day] = date.split("-")
      return `${year}-${month}`
@@ -81,6 +88,7 @@ function fillShortSummary(jsonResponse) {
           <li><strong>CSN avbetalt:</strong>${formatDate(result.csnFreeDate)}</li>
           <li><strong>Bostadslån betalat:</strong>${formatDate(result.mortgageFreeDate)}</li>
           <li><strong>FIRE-tid:</strong>${formatDate(result.fireDate)}</li>
+          <li><strong>FIRE-ålder:</strong>${result.fireAge}</li>
           <li><strong>FIRE-summa (kr):</strong>${Math.round(result.fireAmount).toLocaleString('sv-SE')}</li>
         </u1>
        `
@@ -144,6 +152,7 @@ function buildMonthlyTable(monthlyData) {
    //   Skapa rubrikrad
    const header = table.insertRow();
    header.insertCell().textContent = 'Datum'
+   header.insertCell().textContent = 'Ålder'
    header.insertCell().textContent = 'Investering'
    header.insertCell().textContent = 'Amortering'
    header.insertCell().textContent = 'Börsvärde'
@@ -154,11 +163,12 @@ function buildMonthlyTable(monthlyData) {
         //  Ta ut senaste 3 månaderna
         const quarter = monthlyData.slice(i - 2, i + 1);
 
-        const saved = quarter.reduce((sum, row) => sum  + row.saved, 0)
-        const payed = quarter.reduce((sum, row) => sum  + row.payedOff, 0)
-        const savings = quarter.reduce((sum, row) => sum  + row.stockSavings, 0)
-        const mortgage = quarter.reduce((sum, row) => sum  + row.mortgageLeft, 0)
-        const fire = quarter.reduce((sum, row) => sum  + row.fireAmount, 0)
+        const age = quarter[0].age;
+        const saved = quarter.reduce((sum, row) => sum  + row.saved, 0);
+        const payed = quarter.reduce((sum, row) => sum  + row.payedOff, 0);
+        const savings = quarter.reduce((sum, row) => sum  + row.stockSavings, 0);
+        const mortgage = quarter.reduce((sum, row) => sum  + row.mortgageLeft, 0);
+        const fire = quarter.reduce((sum, row) => sum  + row.fireAmount, 0);
 
         const avgSaved = Math.ceil(saved / quarter.length / 100) * 100;
         const avgPayed = Math.ceil(payed / quarter.length / 100) * 100;
@@ -170,6 +180,7 @@ function buildMonthlyTable(monthlyData) {
 
         const row = table.insertRow();
         row.insertCell().textContent = dateLabel;
+        row.insertCell().textContent = age + 'år';
         row.insertCell().textContent = avgSaved + ' kr';
         row.insertCell().textContent = avgPayed + ' kr';
         row.insertCell().textContent = avgSavings + ' kr';

@@ -8,6 +8,7 @@ public record CalculationResult(
         LocalDate csnFreeDate,
         LocalDate mortgageFreeDate,
         LocalDate fireDate,
+        int fireAge,
         double fireAmount,
         List<MonthlyStatus> monthlyData
 ) {
