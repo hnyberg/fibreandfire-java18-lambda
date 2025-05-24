@@ -4,21 +4,21 @@ import java.time.LocalDate;
 import java.util.List;
 
 public record CalculationResult(
-        LocalDate emergencyFilledDate,
-        LocalDate csnFreeDate,
-        LocalDate mortgageFreeDate,
-        LocalDate fireDate,
+        int emergencyFilledAge,
+        int csnFreeAge,
+        int mortgageFreeAge,
+        int fireAge,
         double fireAmount,
-        List<MonthlyStatus> monthlyData
+        List<MonthlyData> monthlyData
 ) {
-    public record MonthlyStatus(
+    public record MonthlyData(
             LocalDate date,
-            int age,
-            double saved,
+            double age,
+            double invested,
             double stockSavings,
             double payedOff,
-            double mortgageLeft,
-            double csnLeft,
+            double mortgage,
+            double csnDebt,
             double fireAmount
     ) {}
 }

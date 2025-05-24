@@ -11,10 +11,13 @@
 <form id="dataForm">
     <label>Födelseår: <input type="number" name="birth_year" required value="1986"></label><br>
     <label>Födelsemånad (1–12): <input type="number" name="birth_month" required min="1" max="12" value="3"></label><br>
+    <label>Förväntad livslängd (år):<input type="number" name="expected_lifespan" min="70" max="110" value="90"></label><br>
+    <label>Förväntad pensionsålder (år):<input type="number" name="retirement_age" min="62" max="70" value="65"></label><br>
     <label>Nettolön (kr): <input type="number" name="salary" value="37000"></label><br>
+    <label>Pensionsersättning (kr): <input type="number" name="retirement_pay" value="12000"></label><br>
     <label>Bolån (kr): <input type="number" name="mortgage" value="1300000"></label><br>
     <label>Bolåneränta (%): <input type="number" name="mortgage_rate" step="0.01" value="3.3"></label><br>
-    <label>Avkastning börsen (%): <input type="number" name="stocks_gain" step="0.01" value="5"></label><br>
+    <label>Avkastning börsen (%): <input type="number" name="stocks_gain" step="0.01" value="4.5"></label><br>
     <label>Lån CSN (kr): <input type="number" name="csn_total" value="108000"></label><br>
     <label>Avbetalning CSN (kr/mån): <input type="number" name="csn_payoff" value="700"></label><br>
     <label>Mål nödkonto (kr): <input type="number" name="emergency_goal" value="70000"></label><br>
@@ -24,7 +27,7 @@
     <label>Mat-relaterade utgifter (kr): <input type="number" name="food_costs" value="2500"></label><br>
     <label>Resor (kr): <input type="number" name="travel_costs" value="1500"></label><br>
     <label>Procent-andel att lägga på amortering: <input type="number" name="percent_for_amortization"
-                                                         value="50"></label><br>
+                                                         value="22"></label><br>
 
     <button type="submit">Spara</button>
 </form>

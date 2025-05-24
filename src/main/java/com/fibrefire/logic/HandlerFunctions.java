@@ -10,14 +10,17 @@ import java.util.List;
 public class HandlerFunctions {
 
     public static CalculationResult calculateResults(InputData inputData) {
-        int birthYear = inputData.birth().year();
-        int birthMonth = inputData.birth().month();
-        int salary = inputData.income().salary();
+        int birthYear = inputData.age().birthYear();
+        int birthMonth = inputData.age().birthMonth();
+        int expectedLifespan = inputData.age().expectedLifespan();
+        int retirementAge = inputData.age().retirementAge();
+        int netSalary = inputData.income().netSalary();
+        int retirementPay = inputData.income().retirementPay();
         double emergencyNow = inputData.assets().emergencyNow();
         int emergencyGoal = inputData.assets().emergencyGoal();
         double stockSavings = inputData.assets().stockSavings();
         double mortgage = inputData.loans().mortgage();
-        int stocksGain = inputData.assets().stocksGain();
+        double stocksGain = inputData.assets().stocksGain();
         double mortgageRate = inputData.loans().mortgageRate();
         int csnDebt = inputData.loans().csnTotal();
         int csnMonthlyPayoff = inputData.fixedCosts().csnPayoff();
@@ -26,41 +29,48 @@ public class HandlerFunctions {
         int travelCosts = inputData.spending().travelCosts();
         int percentForAmortization = inputData.payChoices().percentForAmortization();
 
-        double monthlyStockGainFactor = Math.pow((1 + (double) stocksGain / 100), (double) 1 / 12);
+        double monthlyStockGainFactor = Math.pow((1 + stocksGain / 100), (double) 1 / 12);
 
-        LocalDate emergencyFilledDate = null;
-        LocalDate csnFreeDate = null;
-        LocalDate mortgageFreeDate = null;
-        LocalDate fireDate = null;
+        int emergencyFilledAge = 0;
+        int csnFreeAge = 0;
+        int mortgageFreeAge = 0;
+        int fireAge = 0;
+
         double fireAmount = 0;
-        List<CalculationResult.MonthlyStatus> monthlyData = new ArrayList<>();
+        List<CalculationResult.MonthlyData> monthlyData = new ArrayList<>();
         LocalDate currentDate = LocalDate.now().withDayOfMonth(1);
-        int monthCounter = 0;
+        int age = 0;
+        int loopLimit = 1000;
+        int loopCount = 0;
 
-        while ((emergencyFilledDate == null
-                || mortgageFreeDate == null
-                || csnFreeDate == null
-                || fireDate == null)
-                && monthCounter < 600) {
+        while (age < expectedLifespan && loopCount < loopLimit) {
 
+            loopCount++;
+            age = calculateAge(birthYear, birthMonth, currentDate);
+            boolean retired = age >= retirementAge;
             double mortgageCost = (mortgageRate / 100) * mortgage / 12;
             double monthlyCost = mustHaves + foodCosts + travelCosts + mortgageCost;
-
-            double available = salary - monthlyCost;
             fireAmount = 25 * monthlyCost * 12;
+
+            double income = retired ? retirementPay : netSalary;
+            double available = income - monthlyCost;
+            if (available < 0) {
+                stockSavings += available;
+                available = 0;
+            }
 
             //  Portfolio, Fire
             stockSavings *= monthlyStockGainFactor;
-            if (fireDate == null && stockSavings >= fireAmount) {
-                fireDate = currentDate;
+            if (fireAge == 0 && stockSavings >= fireAmount) {
+                fireAge = age;
             }
 
             //  CSN
-            if (csnFreeDate == null) {
+            if (csnFreeAge == 0) {
                 int csnPayoff = Math.min(csnMonthlyPayoff, csnDebt);
                 csnDebt -= csnPayoff;
                 if (csnDebt <= 0) {
-                    csnFreeDate = currentDate;
+                    csnFreeAge = age;
                 }
             }
 
@@ -69,8 +79,8 @@ public class HandlerFunctions {
                 double emergencyPayoff = Math.min(available, emergencyGoal - emergencyNow);
                 emergencyNow += emergencyPayoff;
                 available -= emergencyPayoff;
-                if (emergencyFilledDate == null && emergencyNow >= emergencyGoal) {
-                    emergencyFilledDate = currentDate;
+                if (emergencyFilledAge == 0 && emergencyNow >= emergencyGoal) {
+                    emergencyFilledAge = age;
                 }
             }
 
@@ -79,13 +89,13 @@ public class HandlerFunctions {
             if (available > 0) {
 
                 //  amortera
-                if (mortgageFreeDate == null) {
+                if (mortgageFreeAge == 0) {
                     payedOff = available * percentForAmortization / 100;
                     mortgage -= payedOff;
                     available -= payedOff;
 
                     if (mortgage <= 0) {
-                        mortgageFreeDate = currentDate;
+                        mortgageFreeAge = age;
                     }
                 }
 
@@ -94,16 +104,14 @@ public class HandlerFunctions {
                 stockSavings += saved;
             }
 
-            int age = calculateAge(birthYear, birthMonth, currentDate);
-            monthlyData.add(new CalculationResult.MonthlyStatus(
+            monthlyData.add(new CalculationResult.MonthlyData(
                     currentDate, age, saved, stockSavings, payedOff, mortgage, csnDebt, fireAmount));
 
             currentDate = currentDate.plusMonths(1);
-            monthCounter++;
         }
 
         return new CalculationResult(
-                emergencyFilledDate, csnFreeDate, mortgageFreeDate, fireDate, fireAmount, monthlyData);
+                emergencyFilledAge, csnFreeAge, mortgageFreeAge, fireAge, fireAmount, monthlyData);
     }
 
     private static int calculateAge(int birthYear, int birthMonth, LocalDate currentDate) {
