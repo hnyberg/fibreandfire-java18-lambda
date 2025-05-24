@@ -2,44 +2,7 @@ let stockChart = null;
 
 document.getElementById("dataForm").addEventListener("submit", async (e) => {
       e.preventDefault();
-      const formData = new FormData(e.target)
-      const formDataAsJson = {
-        "age": {
-          "birthYear": Number(formData.get("birth_year")),
-          "birthMonth": Number(formData.get("birth_month")),
-          "expectedLifespan": Number(formData.get("expected_lifespan")),
-          "retirementAge": Number(formData.get("retirement_age"))
-        },
-        "income": {
-          "netSalary": Number(formData.get("salary")),
-          "retirementPay": Number(formData.get("retirement_pay"))
-        },
-        "assets": {
-          "emergencyNow": Number(formData.get("emergency_now")),
-          "emergencyGoal": Number(formData.get("emergency_goal")),
-          "stockSavings": Number(formData.get("stock_savings")),
-          "stocksGain": Number(formData.get("stocks_gain"))
-        },
-        "loans": {
-          "mortgage": Number(formData.get("mortgage")),
-          "mortgageRate": Number(formData.get("mortgage_rate")),
-          "csnTotal": Number(formData.get("csn_total"))
-        },
-        "fixedCosts": {
-          "mustHaves": Number(formData.get("must_haves")),
-          "csnPayoff": Number(formData.get("csn_payoff"))
-        },
-        "spending": {
-          "foodCosts": Number(formData.get("food_costs")),
-          "travelCosts": Number(formData.get("travel_costs"))
-        },
-        "payChoices": {
-          "percentForAmortization": Number(formData.get("percent_for_amortization"))
-        }
-      };
-
-      const formDataAsString = JSON.stringify(formDataAsJson)
-      console.log("sending input data", formDataAsString)
+      const formDataAsString = buildFormData(e);
 
       const isLocal = location.hostname === 'localhost' || location.protocol === 'file:';
       const baseUrl = isLocal
@@ -67,6 +30,53 @@ document.getElementById("dataForm").addEventListener("submit", async (e) => {
       }
 
     });
+
+function buildFormData(event) {
+    const formData = new FormData(event.target)
+      const formDataAsJson = {
+        "birth": {
+          "year": Number(formData.get("birth_year")),
+          "month": Number(formData.get("birth_month")),
+          "expectedLifespan": Number(formData.get("expected_lifespan")),
+          "retirementAge": Number(formData.get("retirement_age"))
+        },
+        "income": {
+          "salary": Number(formData.get("salary")),
+          "retirementPay": Number(formData.get("retirement_pay"))
+        },
+        "assets": {
+          "emergencyNow": Number(formData.get("emergency_now")),
+          "emergencyGoal": Number(formData.get("emergency_goal")),
+          "stockSavings": Number(formData.get("stock_savings")),
+          "stocksGain": Number(formData.get("stocks_gain"))
+        },
+        "loans": {
+          "mortgage": Number(formData.get("mortgage")),
+          "mortgageRate": Number(formData.get("mortgage_rate")),
+          "csnTotal": Number(formData.get("csn_total"))
+        },
+        "fixedCosts": {
+          "mustHaves": Number(formData.get("must_haves")),
+          "csnPayoff": Number(formData.get("csn_payoff"))
+        },
+        "spending": {
+          "foodCosts": Number(formData.get("food_costs")),
+          "travelCosts": Number(formData.get("travel_costs"))
+        },
+        "payChoices": {
+          "percentForAmortization": Number(formData.get("percent_for_amortization")),
+          "firePercentage": Number(formData.get("fire_percentage"))
+        }
+      };
+
+      const formDataAsString = JSON.stringify(formDataAsJson)
+      return formDataAsString;
+}
+
+function formatDate(date) {
+     const [year, month, day] = date.split("-")
+     return `${year}-${month}`
+}
 
 function fillShortSummary(jsonResponse) {
     console.log("filling short summary")

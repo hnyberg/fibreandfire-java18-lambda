@@ -28,6 +28,7 @@ public class HandlerFunctions {
         int foodCosts = inputData.spending().foodCosts();
         int travelCosts = inputData.spending().travelCosts();
         int percentForAmortization = inputData.payChoices().percentForAmortization();
+        double firePercentage = inputData.payChoices().firePercentage();
 
         double monthlyStockGainFactor = Math.pow((1 + stocksGain / 100), (double) 1 / 12);
 
