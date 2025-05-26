@@ -9,13 +9,13 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.fasterxml.jackson.module.paramnames.ParameterNamesModule;
-import com.fibrefire.logic.HandlerFunctions;
+import com.fibrefire.logic.LambdaFunctions;
 import com.fibrefire.model.CalculationResult;
 import com.fibrefire.model.InputData;
 
 import java.util.Map;
 
-public class Handler implements RequestHandler<APIGatewayProxyRequestEvent, APIGatewayProxyResponseEvent> {
+public class FinancialPlanner implements RequestHandler<APIGatewayProxyRequestEvent, APIGatewayProxyResponseEvent> {
 
     private final ObjectMapper mapper = new ObjectMapper()
             .registerModule(new ParameterNamesModule())
@@ -35,7 +35,7 @@ public class Handler implements RequestHandler<APIGatewayProxyRequestEvent, APIG
 
             context.getLogger().log("Parsed input: " + inputData);
 
-            CalculationResult calculationResult = HandlerFunctions.calculateResults(inputData);
+            CalculationResult calculationResult = LambdaFunctions.calculateResults(inputData);
 
             String resultAsString = mapper.writeValueAsString(calculationResult);
 

@@ -7,7 +7,7 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
-public class HandlerFunctions {
+public class LambdaFunctions {
 
     public static CalculationResult calculateResults(InputData inputData) {
         int birthYear = inputData.age().birthYear();

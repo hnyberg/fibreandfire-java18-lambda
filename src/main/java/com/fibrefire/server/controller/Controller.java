@@ -9,9 +9,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.fasterxml.jackson.module.paramnames.ParameterNamesModule;
-import com.fibrefire.lambda.Handler;
+import com.fibrefire.lambda.CsvSummarizer;
+import com.fibrefire.lambda.FinancialPlanner;
 import com.fibrefire.model.CalculationResult;
 import com.fibrefire.model.InputData;
+import jakarta.annotation.PostConstruct;
 import org.mockito.Mockito;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -29,23 +31,47 @@ public class Controller {
             .registerModule(new JavaTimeModule())
             .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
 
-    private final Handler lambdaHandler = new Handler();
+    private final LambdaLogger lambdaLogger = Mockito.mock(LambdaLogger.class);
+    private final Context lambdaContext = Mockito.mock(Context.class);
+
+    private final FinancialPlanner lambdaFinancialPlanner = new FinancialPlanner();
+    private final CsvSummarizer csvSummarizer = new CsvSummarizer();
+
+    @PostConstruct
+    private void postConstruct() {
+        Mockito.doNothing().when(lambdaLogger).log(Mockito.anyString());
+        Mockito.doReturn(lambdaLogger).when(lambdaContext).getLogger();
+    }
 
     @PostMapping("/finance")
-    public ResponseEntity<String> handlePost(@RequestBody String json) {
+    public ResponseEntity<String> calculateFinance(@RequestBody String json) {
 
         try {
-
-            LambdaLogger logger = Mockito.mock(LambdaLogger.class);
-            Mockito.doNothing().when(logger).log(Mockito.anyString());
-            Context lambdaContext = Mockito.mock(Context.class);
-            Mockito.doReturn(logger).when(lambdaContext).getLogger();
-
             InputData inputData = mapper.readValue(json, InputData.class);
             APIGatewayProxyRequestEvent event = new APIGatewayProxyRequestEvent()
                     .withBody(mapper.writeValueAsString(inputData));
 
-            APIGatewayProxyResponseEvent response = lambdaHandler.handleRequest(event, lambdaContext);
+            APIGatewayProxyResponseEvent response = lambdaFinancialPlanner.handleRequest(event, lambdaContext);
+            CalculationResult result = mapper.readValue(response.getBody(), CalculationResult.class);
+
+            return ResponseEntity.ok(mapper.writeValueAsString(result));
+
+        } catch (JsonProcessingException e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("{\"error\":\"" + e.getMessage() + "\"}");
+        }
+    }
+
+    @PostMapping("/csv")
+    public ResponseEntity<String> summarizeCsv(@RequestBody String json) {
+
+        try {
+            InputData inputData = mapper.readValue(json, InputData.class);
+            APIGatewayProxyRequestEvent event = new APIGatewayProxyRequestEvent()
+                    .withBody(mapper.writeValueAsString(inputData));
+
+            APIGatewayProxyResponseEvent response = lambdaFinancialPlanner.handleRequest(event, lambdaContext);
             CalculationResult result = mapper.readValue(response.getBody(), CalculationResult.class);
 
             return ResponseEntity.ok(mapper.writeValueAsString(result));

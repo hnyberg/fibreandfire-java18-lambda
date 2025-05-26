@@ -1,47 +1,98 @@
+const config = {
+  localApiUrl: 'http://localhost:8080/dev',
+  productionApiUrl: 'https://7fm4j5apc8.execute-api.eu-west-1.amazonaws.com/dev',
+}
+
+const ELEMENT_IDS = {
+  dataForm: "data-form",
+  csvUploadForm: "csv-upload-form",
+  csvFile: "csv-file",
+  jsonResult: "json-result",
+  stockChart: "stock-chart",
+  savingsTableContainer: "savings-table-container",
+  graphContainer: "graph-container",
+  monthlyTable: "monthly-table",
+}
+
 let stockChart = null;
 
-document.getElementById("dataForm").addEventListener("submit", async (e) => {
-      e.preventDefault();
-      const formDataAsString = buildFormData(e);
+document.getElementById(ELEMENT_IDS.dataForm).addEventListener("submit", handleFormSubmit);
+//document.getElementById(ELEMENT_IDS.csvUploadForm).addEventListener("submit", handleFormSubmit);
 
-      const isLocal = location.hostname === 'localhost' || location.protocol === 'file:';
-      const baseUrl = isLocal
-        ? 'http://localhost:8080/dev/finance'
-        : 'https://7fm4j5apc8.execute-api.eu-west-1.amazonaws.com/dev/finance';
+async function handleFormSubmit(e) {
+    e.preventDefault();
+    const formDataAsString = buildFormData(e);
+    const result = await callApi(formDataAsString, "/finance");
+    if (result) {
+        updateUI(result);
+    }
+}
 
-      const response = await fetch(baseUrl, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: formDataAsString
-      });
+async function callApi(formData, suffix) {
+    const isLocal = location.hostname === "localhost";
+    const baseUrl = isLocal? config.localApiUrl : config.productionApiUrl;
 
-      if (response.ok) {
-        const jsonResponse = await response.json();
-        fillShortSummary(jsonResponse)
+    try {
+        const response = await fetch(`${baseUrl}${suffix}`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: formData,
+        });
 
-        const monthlyData = jsonResponse.monthlyData
-        fillGraph(monthlyData)
-        buildMonthlyTable(monthlyData)
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
 
-      } else {
-        console.error("Något gick fel:", response.status)
-      }
+        return await response.json();
+    } catch (error) {
+        console.error("API call failed:", error)
+        return null;
+    }
+}
 
-    });
+function updateUI(result) {
+    fillShortSummary(result)
+    fillGraph(result.monthlyData)
+    buildMonthlyTable(result.monthlyData)
+}
+
+/*document.getElementById("csv-upload-form").addEventListener("submit", async function(event) {
+    event.preventDefault();
+    const fileInput = document.getElementById("csv-file");
+    const file = fileInput.files[0];
+
+    if (file && file.name.endsWith(".csv")) {
+        const reader = new FileReader();
+
+        reader.onload = function(e) {
+            const content = e.target.result;
+            processCsv(content)
+        };
+
+        reader.readAsText(file);
+    } else {
+        alert("Vänligen välj en csv-fil.")
+    }
+});
+
+function processCsv(content) {
+    const lines = content.split("\n");
+    console.log(lines)
+}*/
 
 function buildFormData(event) {
     const formData = new FormData(event.target)
       const formDataAsJson = {
-        "birth": {
-          "year": Number(formData.get("birth_year")),
-          "month": Number(formData.get("birth_month")),
+        "age": {
+          "birthYear": Number(formData.get("birth_year")),
+          "birthMonth": Number(formData.get("birth_month")),
           "expectedLifespan": Number(formData.get("expected_lifespan")),
           "retirementAge": Number(formData.get("retirement_age"))
         },
         "income": {
-          "salary": Number(formData.get("salary")),
+          "netSalary": Number(formData.get("net_salary")),
           "retirementPay": Number(formData.get("retirement_pay"))
         },
         "assets": {
@@ -96,54 +147,67 @@ function fillShortSummary(jsonResponse) {
 }
 
 function fillGraph(monthlyData) {
-    console.log("filling graph")
-    const age = monthlyData.map(row => row.age)
-    const stockSavings = monthlyData.map(row => row.stockSavings)
-    const mortgage = monthlyData.map(row => row.mortgage)
-    const csnLeft = monthlyData.map(row => row.csnLeft)
-    const fireAmount = monthlyData.map(row => row.fireAmount)
-    const stockChartElement = document.getElementById('stockChart')
-
+    console.log("filling graph");
     if (stockChart) {
-        stockChart.data.labels = age;
-        stockChart.data.datasets[0].data = stockSavings
-        stockChart.data.datasets[1].data = mortgage
-        stockChart.data.datasets[2].data = csnLeft
-        stockChart.data.datasets[3].data = fireAmount
-        stockChart.update()
+        updateChart(stockChart, monthlyData);
     } else {
-                stockChart = new Chart(stockChartElement, {
-                    type: 'line',
-                    data: {
-                        labels: age,
-                        datasets: [
-                            { label: 'Aktier', data: stockSavings, borderColor: 'green' },
-                            { label: 'Bolån', data: mortgage, borderColor: 'yellow' },
-                            { label: 'CSN Lån', data: csnLeft, borderColor: 'red' },
-                            { label: 'FIRE-mål', data: fireAmount, borderColor: 'orange', borderDash: [5, 5] }
-                        ]
-                    },
-                    options: {
-                        scales: {
-                            x: {
-                                ticks: {
-                                    callback: function (value, index) {
-                                        if (index % 2 == 0) return this.getLabelForValue(value)
-                                            return ``
-                                        }
-                                    }
-                                },
-                            y: {
-                                beginAtZero: true
+        stockChart = createChart(monthlyData);
+    }
+}
+
+function createChart(monthlyData) {
+    const age = monthlyData.map(row => row.age);
+    const stockSavings = monthlyData.map(row => row.stockSavings);
+    const mortgage = monthlyData.map(row => row.mortgage);
+    const csnLeft = monthlyData.map(row => row.csnLeft);
+    const fireAmount = monthlyData.map(row => row.fireAmount);
+    const stockChartElement = document.getElementById(ELEMENT_IDS.stockChart);
+
+    return new Chart(stockChartElement, {
+                type: 'line',
+                data: {
+                    labels: age,
+                    datasets: [
+                        { label: 'Aktier', data: stockSavings, borderColor: 'green' },
+                        { label: 'Bolån', data: mortgage, borderColor: 'yellow' },
+                        { label: 'CSN Lån', data: csnLeft, borderColor: 'red' },
+                        { label: 'FIRE-mål', data: fireAmount, borderColor: 'orange', borderDash: [5, 5] }
+                    ]
+                },
+                options: {
+                    scales: {
+                        x: {
+                            ticks: {
+                                callback: function (value, index) {
+                                    return index % 2 === 0 ? this.getLabelForValue(value) : '';
+                                }
                             }
+                        },
+                        y: {
+                            beginAtZero: true
                         }
                     }
-                })
-            }
+                }
+            });
+}
+
+function updateChart(chart, monthlyData) {
+    const age = monthlyData.map(row => row.age);
+    const stockSavings = monthlyData.map(row => row.stockSavings);
+    const mortgage = monthlyData.map(row => row.mortgage);
+    const csnLeft = monthlyData.map(row => row.csnLeft);
+    const fireAmount = monthlyData.map(row => row.fireAmount);
+
+    chart.data.labels = age;
+    chart.data.datasets[0].data = stockSavings;
+    chart.data.datasets[1].data = mortgage;
+    chart.data.datasets[2].data = csnLeft;
+    chart.data.datasets[3].data = fireAmount;
+    chart.update();
 }
 
 function buildMonthlyTable(monthlyData) {
-   console.log("filling savings table")
+   console.log("filling savings table");
    const table = document.createElement('table');
    table.className = 'savings-table';
    const formatter = new Intl.NumberFormat('sv-SE');
@@ -178,16 +242,14 @@ function buildMonthlyTable(monthlyData) {
         const age = monthlyData[i].age;
 
         const row = table.insertRow();
-        row.insertCell().textContent = date;
-        row.insertCell().textContent = age;
-        row.insertCell().textContent = formatter.format(avgInvested) + ' kr';
-        row.insertCell().textContent = formatter.format(avgPayed) + ' kr';
-        row.insertCell().textContent = formatter.format(avgSavings) + ' kr';
-        row.insertCell().textContent = formatter.format(avgMortgage) + ' kr';
-        row.insertCell().textContent = avgFire + ' kr';
+        row.innerHTML = `
+           <td>${date}</td>
+           <td>${age}</td>
+           <td>${formatter.format(avgInvested)} kr</td>
+           <td>${formatter.format(avgPayed)} kr</td>
+           <td>${formatter.format(avgSavings)} kr</td>
+           <td>${formatter.format(avgMortgage)} kr</td>
+           <td>${formatter.format(avgFire)} kr</td>
+       `;
    }
-
-   const container = document.getElementById('savingsTableContainer');
-   container.innerHTML = '' //  rensa tabell först
-   container.appendChild(table)
 }

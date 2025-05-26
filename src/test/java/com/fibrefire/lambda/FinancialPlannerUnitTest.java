@@ -15,13 +15,13 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
-class HandlerUnitTest {
+class FinancialPlannerUnitTest {
 
-    Handler handler;
+    FinancialPlanner financialPlanner;
 
     @BeforeEach
     void setUp() {
-        handler = new Handler();
+        financialPlanner = new FinancialPlanner();
     }
 
     @Test
@@ -49,7 +49,7 @@ class HandlerUnitTest {
         Context lambdaContext = Mockito.mock(Context.class);
         Mockito.doReturn(logger).when(lambdaContext).getLogger();
 
-        APIGatewayProxyResponseEvent response = handler.handleRequest(event, lambdaContext);
+        APIGatewayProxyResponseEvent response = financialPlanner.handleRequest(event, lambdaContext);
         CalculationResult result = mapper.readValue(response.getBody(), CalculationResult.class);
         System.out.println("emergency: " + result.emergencyFilledDate());
         System.out.println("csn: " + result.csnFreeDate());
