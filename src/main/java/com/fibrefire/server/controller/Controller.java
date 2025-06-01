@@ -64,19 +64,15 @@ public class Controller {
     }
 
     @PostMapping("/csv")
-    public ResponseEntity<String> summarizeCsv(@RequestBody String json) {
+    public ResponseEntity<String> summarizeCsv(@RequestBody String csvString) {
 
         try {
-            InputData inputData = mapper.readValue(json, InputData.class);
-            APIGatewayProxyRequestEvent event = new APIGatewayProxyRequestEvent()
-                    .withBody(mapper.writeValueAsString(inputData));
+            APIGatewayProxyRequestEvent event = new APIGatewayProxyRequestEvent().withBody(csvString);
 
-            APIGatewayProxyResponseEvent response = lambdaFinancialPlanner.handleRequest(event, lambdaContext);
-            CalculationResult result = mapper.readValue(response.getBody(), CalculationResult.class);
+            APIGatewayProxyResponseEvent response = csvSummarizer.handleRequest(event, lambdaContext);
+            return ResponseEntity.ok(response.getBody());
 
-            return ResponseEntity.ok(mapper.writeValueAsString(result));
-
-        } catch (JsonProcessingException e) {
+        } catch (Exception e) {
             e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body("{\"error\":\"" + e.getMessage() + "\"}");

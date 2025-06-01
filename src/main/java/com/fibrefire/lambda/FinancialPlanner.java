@@ -9,7 +9,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.fasterxml.jackson.module.paramnames.ParameterNamesModule;
-import com.fibrefire.logic.LambdaFunctions;
+import com.fibrefire.logic.FinancialPlannerFunctions;
 import com.fibrefire.model.CalculationResult;
 import com.fibrefire.model.InputData;
 
@@ -35,7 +35,7 @@ public class FinancialPlanner implements RequestHandler<APIGatewayProxyRequestEv
 
             context.getLogger().log("Parsed input: " + inputData);
 
-            CalculationResult calculationResult = LambdaFunctions.calculateResults(inputData);
+            CalculationResult calculationResult = FinancialPlannerFunctions.calculateResults(inputData);
 
             String resultAsString = mapper.writeValueAsString(calculationResult);
 

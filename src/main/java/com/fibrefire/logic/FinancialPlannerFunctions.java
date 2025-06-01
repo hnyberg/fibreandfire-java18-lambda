@@ -7,7 +7,7 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
-public class LambdaFunctions {
+public class FinancialPlannerFunctions {
 
     public static CalculationResult calculateResults(InputData inputData) {
         int birthYear = inputData.age().birthYear();
@@ -51,7 +51,7 @@ public class LambdaFunctions {
             boolean retired = age >= retirementAge;
             double mortgageCost = (mortgageRate / 100) * mortgage / 12;
             double monthlyCost = mustHaves + foodCosts + travelCosts + mortgageCost;
-            fireAmount = 25 * monthlyCost * 12;
+            fireAmount = (100 / firePercentage) * monthlyCost * 12;
 
             double income = retired ? retirementPay : netSalary;
             double available = income - monthlyCost;
@@ -92,7 +92,7 @@ public class LambdaFunctions {
                 //  amortera
                 if (mortgageFreeAge == 0) {
                     payedOff = available * percentForAmortization / 100;
-                    mortgage -= payedOff;
+                    mortgage -= Math.max(0, payedOff);
                     available -= payedOff;
 
                     if (mortgage <= 0) {

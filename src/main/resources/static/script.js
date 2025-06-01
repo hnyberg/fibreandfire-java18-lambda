@@ -17,18 +17,9 @@ const ELEMENT_IDS = {
 let stockChart = null;
 
 document.getElementById(ELEMENT_IDS.dataForm).addEventListener("submit", handleFormSubmit);
-//document.getElementById(ELEMENT_IDS.csvUploadForm).addEventListener("submit", handleFormSubmit);
+document.getElementById(ELEMENT_IDS.csvUploadForm).addEventListener("submit", handleCsvUpload);
 
-async function handleFormSubmit(e) {
-    e.preventDefault();
-    const formDataAsString = buildFormData(e);
-    const result = await callApi(formDataAsString, "/finance");
-    if (result) {
-        updateUI(result);
-    }
-}
-
-async function callApi(formData, suffix) {
+async function callApi(formData, suffix, header) {
     const isLocal = location.hostname === "localhost";
     const baseUrl = isLocal? config.localApiUrl : config.productionApiUrl;
 
@@ -36,7 +27,7 @@ async function callApi(formData, suffix) {
         const response = await fetch(`${baseUrl}${suffix}`, {
             method: "POST",
             headers: {
-                "Content-Type": "application/json",
+                "Content-Type": header,
             },
             body: formData,
         });
@@ -52,35 +43,66 @@ async function callApi(formData, suffix) {
     }
 }
 
-function updateUI(result) {
+async function handleFormSubmit(e) {
+    e.preventDefault();
+    const formDataAsString = buildFormData(e);
+    const result = await callApi(formDataAsString, "/finance", "application/json");
+    if (result) {
+        updateFinanceUI(result);
+    }
+}
+
+async function handleCsvUpload(e) {
+    e.preventDefault();
+    try {
+        const csvContent = await getCsvContent(e);
+        if (!isValidCsvContent(csvContent)) {
+            throw new Error("Invalid CSV format. Please check your file.");
+        }
+
+        showLoadingIndicator();
+        const result = await callApi(csvContent, "/csv", "text/csv");
+        hideLoadingIndicator();
+
+        if (result) {
+            console.log(result);
+            updateCsvUI(result);
+            showSuccessMessage("CSV data processed successfully!");
+        }
+    } catch (error) {
+        console.error("Error uploading CSV:", error);
+        showErrorMessage(error.message);
+    }
+}
+
+function isValidCsvContent(content) {
+    // Implement basic CSV validation logic here
+    // For example, check if it has the expected number of columns
+    return true;
+//    const lines = content.split("\n");
+//    return lines.length > 1 && lines[0].split(",").length === expectedColumnCount;
+}
+
+function getCsvContent(event) {
+    return new Promise((resolve, reject) => {
+        const fileInput = document.getElementById(ELEMENT_IDS.csvFile);
+        const file = fileInput.files[0];
+        if (file && file.name.endsWith(".csv")) {
+            const reader = new FileReader();
+            reader.onload = (e) => resolve(e.target.result);
+            reader.onerror = () => reject(new Error("Failed to read the file."));
+            reader.readAsText(file);
+        } else {
+            reject(new Error("Please select a valid CSV file."));
+        }
+    });
+}
+
+function updateFinanceUI(result) {
     fillShortSummary(result)
     fillGraph(result.monthlyData)
     buildMonthlyTable(result.monthlyData)
 }
-
-/*document.getElementById("csv-upload-form").addEventListener("submit", async function(event) {
-    event.preventDefault();
-    const fileInput = document.getElementById("csv-file");
-    const file = fileInput.files[0];
-
-    if (file && file.name.endsWith(".csv")) {
-        const reader = new FileReader();
-
-        reader.onload = function(e) {
-            const content = e.target.result;
-            processCsv(content)
-        };
-
-        reader.readAsText(file);
-    } else {
-        alert("Vänligen välj en csv-fil.")
-    }
-});
-
-function processCsv(content) {
-    const lines = content.split("\n");
-    console.log(lines)
-}*/
 
 function buildFormData(event) {
     const formData = new FormData(event.target)
@@ -159,7 +181,7 @@ function createChart(monthlyData) {
     const age = monthlyData.map(row => row.age);
     const stockSavings = monthlyData.map(row => row.stockSavings);
     const mortgage = monthlyData.map(row => row.mortgage);
-    const csnLeft = monthlyData.map(row => row.csnLeft);
+    const csnLeft = monthlyData.map(row => row.csnDebt);
     const fireAmount = monthlyData.map(row => row.fireAmount);
     const stockChartElement = document.getElementById(ELEMENT_IDS.stockChart);
 
@@ -252,4 +274,25 @@ function buildMonthlyTable(monthlyData) {
            <td>${formatter.format(avgFire)} kr</td>
        `;
    }
+}
+
+function updateCsvUI(result) {
+    // Implement this function to update the UI with the processed CSV data
+    // This could involve creating a table, updating charts, etc.
+}
+
+function showLoadingIndicator() {
+    // Implement this to show a loading spinner or message
+}
+
+function hideLoadingIndicator() {
+    // Implement this to hide the loading spinner or message
+}
+
+function showSuccessMessage(message) {
+    // Implement this to show a success message to the user
+}
+
+function showErrorMessage(message) {
+    // Implement this to show an error message to the user
 }

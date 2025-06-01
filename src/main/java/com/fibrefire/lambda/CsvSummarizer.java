@@ -4,14 +4,12 @@ import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyRequestEvent;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyResponseEvent;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.fasterxml.jackson.module.paramnames.ParameterNamesModule;
-import com.fibrefire.logic.LambdaFunctions;
-import com.fibrefire.model.CalculationResult;
-import com.fibrefire.model.InputData;
+import com.fibrefire.logic.CsvSummarizerFunctions;
+import com.fibrefire.model.CsvSummary;
 
 import java.util.Map;
 
@@ -28,26 +26,18 @@ public class CsvSummarizer implements RequestHandler<APIGatewayProxyRequestEvent
         String eventBody = inputEvent.getBody();
         context.getLogger().log("Raw body: " + eventBody);
 
-        InputData inputData;
+        CsvSummary csvSummary = CsvSummarizerFunctions.summarize(eventBody);
 
         try {
-            inputData = mapper.readValue(eventBody, InputData.class);
-
-            context.getLogger().log("Parsed input: " + inputData);
-
-            CalculationResult calculationResult = LambdaFunctions.calculateResults(inputData);
-
-            String resultAsString = mapper.writeValueAsString(calculationResult);
-
             return new APIGatewayProxyResponseEvent()
                     .withStatusCode(200)
-                    .withBody(resultAsString)
+                    .withBody(mapper.writeValueAsString(csvSummary))
                     .withHeaders(Map.of(
                             "Content-Type", "application/json",
                             "Access-Control-Allow-Origin", "*"
                     ));
 
-        } catch (JsonProcessingException e) {
+        } catch (Exception e) {
             context.getLogger().log("Error: " + e.getMessage());
             return new APIGatewayProxyResponseEvent()
                     .withStatusCode(500)
