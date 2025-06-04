@@ -1,6 +1,9 @@
 package com.fibrefire.model;
 
+import java.util.Set;
+
 public enum CostCategory {
+    CREDIT_CARD,
     FOOD,
     RESTAURANT,
     ENTERTAINMENT,
@@ -13,5 +16,11 @@ public enum CostCategory {
     UTILITIES,
     HOME,
     HEALTH,
-    OTHER
+    CLOTHES,
+    TRANSFERS,
+    OTHER;
+
+    public static final Set<CostCategory> FIXED = Set.of(
+            ENTERTAINMENT, TRAVEL, CHARITY, UTILITIES, HOME, HEALTH, CLOTHES, OTHER);
+    public static final Set<CostCategory> FOODS = Set.of(FOOD, RESTAURANT);
 }

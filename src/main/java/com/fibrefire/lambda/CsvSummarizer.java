@@ -44,6 +44,4 @@ public class CsvSummarizer implements RequestHandler<APIGatewayProxyRequestEvent
                     .withBody("Internal server error: " + e.getMessage());
         }
     }
-
-
 }

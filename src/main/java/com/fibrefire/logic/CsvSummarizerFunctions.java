@@ -3,14 +3,25 @@ package com.fibrefire.logic;
 import com.fibrefire.model.CostCategory;
 import com.fibrefire.model.CsvSummary;
 
+import java.time.LocalDate;
+import java.time.temporal.WeekFields;
 import java.util.*;
 
-public class CsvSummarizerFunctions {
-    public static CsvSummary summarize(String eventBody) {
+import static com.fibrefire.model.CostCategory.*;
 
-        //  collect costs per category
+public class CsvSummarizerFunctions {
+
+    private static final String OVERFORING = "överföring";
+
+    public static CsvSummary summarize(String eventBody) {
+        Map<String, Map<CostCategory, Float>> specificsMap = collectCosts(eventBody);
+        List<CsvSummary.WeeklySpecifics> weeklySpecificsList = calculateAverage(specificsMap);
+        return new CsvSummary(weeklySpecificsList);
+    }
+
+    private static Map<String, Map<CostCategory, Float>> collectCosts(String input) {
         Map<String, Map<CostCategory, Float>> specificsMap = new HashMap<>();
-        String[] lines = eventBody.split("\\r?\\n");
+        String[] lines = input.split("\\r?\\n");
         for (String line : lines) {
             try {
                 String[] parts = line.split(";");
@@ -22,32 +33,72 @@ public class CsvSummarizerFunctions {
                     continue;
                 }
 
-                String description = parts[3].toLowerCase();
-                CostCategory costCategory = CostCategorizer.getCostCategory(description);
-
-                String date = parts[1].substring(0, 8);
-                if (!specificsMap.containsKey(date)) {
-                    specificsMap.put(date, new HashMap<>());
+                String type = parts[2].toLowerCase().replaceAll("\"", "");
+                if (OVERFORING.equals(type)) {
+                    continue;
                 }
-                Map<CostCategory, Float> monthSpecifics = specificsMap.get(date);
+                String description = parts[3].toLowerCase().replaceAll("\"", "");
+
+                String[] dateParts = parts[1].replaceAll("\"", "").split("-");
+                LocalDate date = LocalDate.of(Integer.parseInt(dateParts[0]), Integer.parseInt(dateParts[1]), Integer.parseInt(dateParts[2]));
+                int week = date.get(WeekFields.of(Locale.GERMAN).weekOfYear());
+                String dateKey = dateParts[0] + "-v" + String.format("%02d", week);
+                if (!specificsMap.containsKey(dateKey)) {
+                    specificsMap.put(dateKey, new HashMap<>());
+                }
+
+                CostCategory costCategory = CostCategorizer.getCostCategory(description, type, dateKey, cost);
+                if (OTHER.equals(costCategory) && cost > 0) {
+                    System.out.println(costCategory + ", " + type + ", " + description + ", : " + cost);
+                }
+                Map<CostCategory, Float> monthSpecifics = specificsMap.get(dateKey);
                 if (!monthSpecifics.containsKey(costCategory)) {
                     monthSpecifics.put(costCategory, 0f);
                 }
                 monthSpecifics.put(costCategory, monthSpecifics.get(costCategory) + cost);
 
-            } catch (Exception ignored) {}
+            } catch (Exception ignored) {
+            }
         }
+        return specificsMap;
+    }
 
-        //  calculate average
-        List<CsvSummary.MonthSpecifics> monthSpecificsList = new ArrayList<>();
+    private static List<CsvSummary.WeeklySpecifics> calculateAverage(Map<String, Map<CostCategory, Float>> specificsMap) {
+        List<CsvSummary.WeeklySpecifics> weeklySpecificsList = new ArrayList<>();
         for (Map.Entry<String, Map<CostCategory, Float>> entry : specificsMap.entrySet()) {
             String date = entry.getKey();
             Map<CostCategory, Float> specificsForThisMonth = entry.getValue();
-            CsvSummary.MonthSpecifics monthSpecifics = new CsvSummary.MonthSpecifics(date, specificsForThisMonth);
-            monthSpecificsList.add(monthSpecifics);
+            float fixedCosts = summarizeFixedCosts(specificsForThisMonth);
+            float foodCosts = summarizeFoodCosts(specificsForThisMonth);
+            float allCosts = summarizeAllCosts(specificsForThisMonth);
+            CsvSummary.WeeklySpecifics weeklySpecifics = new CsvSummary.WeeklySpecifics(
+                    date, specificsForThisMonth, fixedCosts, foodCosts, allCosts);
+            weeklySpecificsList.add(weeklySpecifics);
         }
-        monthSpecificsList.sort(Comparator.comparing(CsvSummary.MonthSpecifics::month));
+        weeklySpecificsList.sort(Comparator.comparing(CsvSummary.WeeklySpecifics::week));
 
-        return new CsvSummary(monthSpecificsList);
+        return weeklySpecificsList;
+    }
+
+    private static float summarizeFixedCosts(Map<CostCategory, Float> input) {
+        return input.entrySet().stream()
+                .filter(entry -> FIXED.contains(entry.getKey()))
+                .map(Map.Entry::getValue)
+                .reduce(Float::sum)
+                .orElse(0f);
+    }
+
+    private static float summarizeFoodCosts(Map<CostCategory, Float> input) {
+        return input.entrySet().stream()
+                .filter(entry -> FOODS.contains(entry.getKey()))
+                .map(Map.Entry::getValue)
+                .reduce(Float::sum)
+                .orElse(0f);
+    }
+
+    private static float summarizeAllCosts(Map<CostCategory, Float> input) {
+        return input.values().stream()
+                .reduce(Float::sum)
+                .orElse(0f);
     }
 }
