@@ -29,9 +29,6 @@ public class CsvSummarizerFunctions {
                         .replace(",", ".")
                         .replace(" ", "")
                         .replaceAll("\"", "")) * -1;
-                if (cost < 0) {
-                    continue;
-                }
 
                 String type = parts[2].toLowerCase().replaceAll("\"", "");
                 if (OVERFORING.equals(type)) {
@@ -48,8 +45,11 @@ public class CsvSummarizerFunctions {
                 }
 
                 CostCategory costCategory = CostCategorizer.getCostCategory(description, type, dateKey, cost);
-                if (OTHER.equals(costCategory) && cost > 0) {
+                if (cost < 0) {
                     System.out.println(costCategory + ", " + type + ", " + description + ", : " + cost);
+                }
+                if (cost < 0 && !RESTAURANT.equals(costCategory)) {
+                    continue; // Skip negative costs unless they are restaurant costs
                 }
                 Map<CostCategory, Float> monthSpecifics = specificsMap.get(dateKey);
                 if (!monthSpecifics.containsKey(costCategory)) {
