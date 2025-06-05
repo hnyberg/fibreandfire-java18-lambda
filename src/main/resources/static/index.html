@@ -7,7 +7,7 @@
 </head>
 
 <body>
-<div id="civ-summarizer">
+<div id="csv-summarizer">
     <h1>Ladda upp CSV-fil</h1>
     <form id="csv-upload-form">
         <input type="file" id="csv-file" accept=".csv" />
@@ -16,6 +16,7 @@
 
     <div id="csv-results">
         <canvas id="cost-chart" width="600" height="300"></canvas>
+        <!-- Autofill-knapp läggs in via JS efter tabellen -->
     </div>
 </div>
 <div id="input-form">
@@ -43,7 +44,7 @@
         <label>Procent att ta ut vid FIRE (%): <input type="number" name="fire_percentage" step="0.01"
                                                       value="3"></label><br>
         <label>Procent-andel att lägga på amortering: <input type="number" name="percent_for_amortization"
-                                                             value="22"></label><br>
+                                                             value="24"></label><br>
 
         <button type="submit">Spara</button>
     </form>

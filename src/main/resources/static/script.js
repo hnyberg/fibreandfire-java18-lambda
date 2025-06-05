@@ -361,6 +361,44 @@ function renderAvgTable(categories, avgPerCategory) {
         cell2.textContent = avgPerCategory[category].toLocaleString('sv-SE', { maximumFractionDigits: 0 }) + ' kr';
         cell2.style.padding = '6px';
     });
+
+    // Lägg till autofyll-knapp efter tabellen (om den inte redan finns)
+    let autofillBtn = document.getElementById('autofill-btn');
+    if (!autofillBtn) {
+        autofillBtn = document.createElement('button');
+        autofillBtn.id = 'autofill-btn';
+        autofillBtn.textContent = 'Autofyll formulär med summerade månadsutgifter';
+        autofillBtn.style.margin = '20px 0 0 0';
+        autofillBtn.style.padding = '10px 18px';
+        autofillBtn.style.fontSize = '1em';
+        autofillBtn.style.background = '#1976d2';
+        autofillBtn.style.color = 'white';
+        autofillBtn.style.border = 'none';
+        autofillBtn.style.borderRadius = '5px';
+        autofillBtn.style.cursor = 'pointer';
+        avgTable.parentNode.insertBefore(autofillBtn, avgTable.nextSibling);
+    }
+    autofillBtn.onclick = function() {
+        // Summera kategorier enligt instruktion
+        const get = cat => avgPerCategory[cat] || 0;
+        // food_costs = (FOOD + RESTAURANT) * 4.3
+        const foodSum = (get('FOOD') + get('RESTAURANT')) * 4.3;
+        // travel_costs = TRAVEL * 4.3
+        const travelSum = get('TRAVEL') * 4.3;
+        // must_haves = (CREDIT_CARD + ENTERTAINMENT + RENT + CHARITY + UTILITIES + HOME + HEALTH + CLOTHES + OTHER) * 4.3
+        const mustHavesSum = (
+            get('CREDIT_CARD') + get('ENTERTAINMENT') + get('RENT') + get('CHARITY') +
+            get('UTILITIES') + get('HOME') + get('HEALTH') + get('CLOTHES') + get('OTHER')
+        ) * 4.3;
+        // Fyll i formulärfälten
+        const setVal = (name, val) => {
+            const el = document.querySelector(`[name="${name}"]`);
+            if (el) el.value = Math.round(val);
+        };
+        setVal('food_costs', foodSum);
+        setVal('travel_costs', travelSum);
+        setVal('must_haves', mustHavesSum);
+    };
 }
 
 // ===================== UI-FEEDBACK =====================
